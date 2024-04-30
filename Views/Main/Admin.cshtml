@@ -1,0 +1,128 @@
+﻿@model List<altsite.Models.Site>
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Site Settings</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+        .dropdown {
+            display: none;
+        }
+    </style>
+</head>
+<body class="align-content-center">
+<div>
+    <button id="button-add-site" onclick="addOriginalSite()">
+        Add a new site
+    </button>
+    @for (int i = 0; i < Model.Count; i++)
+    {
+        <div class="align-content-center">
+            <button id="button-@i" onclick="toggleDropdown(this)" data-index="@i" data-original-site="@Model[i].OriginalSiteURL">
+                @Model[i].OriginalSiteURL
+            </button>
+            <div id="dropdownContainer@(i)" class="dropdown">
+                <!-- Added data-index attribute here -->
+                <select name="sites[@i].RedirectableSites" id="dropdown-@i" data-index="@i" multiple="multiple">
+                    @foreach (var site in Model[i].RedirectableSites)
+                    {
+                        <option value="@site">@site</option>
+                    }
+                </select>
+                <button type="button" onclick="addSite('button-@i')">Add redirect</button>
+                <button type="button" onclick="removeSite('dropdown-@i')">Remove selected</button>
+                <button type="button" onclick="removeOriginalSite('@Model[i].OriginalSiteURL')">Remove this website</button>
+            </div>
+        </div>
+    }
+</div>
+
+    <script>
+        function toggleDropdown(button) {
+            var index = $(button).data('index');
+            $('#dropdownContainer' + index).toggle();
+        }
+        function addOriginalSite() {
+            var newSite = prompt("Enter the new site(no 'http(s)://')");
+            if (newSite) {
+                            $.ajax({
+                                url: '@Url.Action("AddOriginalSite", "Main")',
+                                type: 'POST',
+                                data: { newSite: newSite },
+                                success: function (response) {
+                                    location.reload();
+                                },
+                                error: function () {
+                                    alert('Error adding site.');
+                                }
+                            });
+                        }
+        }
+        function removeOriginalSite(oldSite) {
+            console.log(oldSite);
+        $.ajax({
+                url: '@Url.Action("RemoveOriginalSite", "Main")',
+                type: 'POST',
+                data: { oldSite: oldSite },
+                success: function (response) {
+                    location.reload();
+                },
+            error: function () {
+                alert('Error removing site.');
+                }
+            });
+        }
+
+        function addSite(buttonId) {
+            var button = $('#' + buttonId);
+            var index = button.data('index');
+            var originalSite = button.data('original-site');
+            var newSite = prompt("Enter new redirectable site:");
+            if (newSite) {
+                $.ajax({
+                    url: '@Url.Action("AddSite", "Main")',
+                    type: 'POST',
+                    data: { newSite: newSite, originalSite: originalSite },
+                    success: function (response) {
+                        $('#dropdown-' + index).append(new Option(response, response));
+                    },
+                    error: function () {
+                        alert('Error adding site.');
+                    }
+                });
+            }
+        }
+
+        function removeSite(selectId) {
+            var select = $('#' + selectId);
+            var index = select.data('index');
+            var originalSite = $('#button-' + index).data('original-site');
+            var selectedValue = select.val().at(0);
+            console.log(select.val().at(0));
+
+            if (selectedValue) {
+                $.ajax({
+                    url: '@Url.Action("RemoveSite", "Main")',
+                    type: 'POST',
+                    data: { removableSite: selectedValue, originalSite: originalSite },
+                    success: function (response) {
+                        console.log(response);
+                        select.find('option:selected').remove();
+                    },
+                    error: function () {
+                        alert('Error removing site.');
+                    }
+                });
+            } else {
+                alert('Please select a site to remove.');
+            }
+        }
+    </script>
+</body>
+</html>

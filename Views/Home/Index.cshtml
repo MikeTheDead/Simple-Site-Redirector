@@ -1,0 +1,20 @@
+﻿@model List<altsite.Models.Site>
+
+<head>
+    <title>Simple Site Redirector</title>
+</head>
+
+<h2>Sites to redirect</h2>
+
+@foreach (var site in Model)
+{
+    <div>
+        <h3>@site.OriginalSiteURL</h3>
+        <ul>
+            @foreach (var redir in site.RedirectableSites)
+            {
+                <li>@redir</li>
+            }
+        </ul>
+    </div>
+}
