@@ -98,10 +98,16 @@ public class MainController : Controller
     }
 
     [HttpGet("{*url}")]
-public async Task<IActionResult> index(string url, [FromQuery]string query = null)
+public async Task<IActionResult> index(string url = null, [FromQuery]string query = null)
 {
     try
     {
+        // decode
+        if (!string.IsNullOrWhiteSpace(url))
+        {
+            url = Uri.UnescapeDataString(url);
+        }
+
         //log the provided url
         _logger.LogInformation($"requested url: {url}");
 
@@ -177,16 +183,17 @@ public async Task<IActionResult> index(string url, [FromQuery]string query = nul
     }
 }
 
-private string NormalizeDomain(string host)
-{
-    var parts = host.Split('.');
-    if (parts.Length > 2)
+
+    private string NormalizeDomain(string host)
     {
-        // remove subdomain
-        return string.Join(".", parts.Skip(1));
+        var parts = host.Split('.');
+        if (parts.Length > 2)
+        {
+            // remove subdomain
+            return string.Join(".", parts.Skip(1));
+        }
+        return host;
     }
-    return host;
-}
 
 
 

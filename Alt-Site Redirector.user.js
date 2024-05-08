@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Alt-Site Redirector
 // @namespace    https://violentmonkey.github.io/
-// @version      1.0
+// @version      1.1
 // @description  Redirect sites to their based counterparts
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
@@ -14,29 +14,34 @@
 
     const serverUrl = 'https://redir.nloga.top';
 
-    function checkAndRedirect() {
-        const currentUrl = decodeURIComponent(window.location.href);
+    function getDomain(url) {
+        const a = document.createElement('a');
+        a.href = url;
+        return a.hostname;
+    }
 
-        if (/google\.com\/search|webhp/.test(currentUrl) || currentUrl.startsWith(serverUrl)) {
+    function checkAndRedirect() {
+        const currentUrl = window.location.href;
+        const currentDomain = getDomain(currentUrl);
+
+        if (/google\.com\/search|webhp/.test(currentUrl) || currentDomain === getDomain(serverUrl)) {
             document.documentElement.style.display = '';
             return;
         }
 
         document.documentElement.style.display = 'none';
-
-        const queryUrl = `${serverUrl}/${currentUrl}`;
+        const queryUrl = `${serverUrl}/${encodeURIComponent(currentUrl)}`;
 
         GM_xmlhttpRequest({
             method: 'GET',
             url: queryUrl,
             onload: function(response) {
-                if (response.status === 200 && response.finalUrl && response.finalUrl !== currentUrl) {
-                    window.location.href = response.finalUrl;
-                } else if (response.status === 200) {
+                if (response.status === 200) {
                     try {
-                        var data = JSON.parse(response.responseText);
-                        if (data.redirectUrl) {
-                            window.location.href = data.redirectUrl;
+                        var finalUrl = response.finalUrl || (JSON.parse(response.responseText).redirectUrl);
+
+                        if (finalUrl && getDomain(finalUrl) !== currentDomain) {
+                            window.location.href = finalUrl;
                         } else {
                             document.documentElement.style.display = '';
                         }
@@ -55,9 +60,5 @@
         });
     }
 
-    if (!window.location.href.startsWith(serverUrl)) {
-        checkAndRedirect();
-    }
+    checkAndRedirect();
 })();
-
-
