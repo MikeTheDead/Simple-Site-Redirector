@@ -4,7 +4,6 @@
 // @version      1.0
 // @description  Redirect sites to their based counterparts
 // @match        *://*/*
-// @exclude      *://*.google.com/*
 // @grant        GM_xmlhttpRequest
 // @connect      localhost
 // @run-at       document-start
@@ -13,28 +12,25 @@
 (function() {
     'use strict';
 
-    //hide while checking
-    document.documentElement.style.display = 'none';
-
-    const serverUrl = 'https://redir.nloga.top'; //link to instance
+    const serverUrl = 'https://redir.nloga.top';
 
     function checkAndRedirect() {
-        const currentUrl = window.location.href;
+        const currentUrl = decodeURIComponent(window.location.href);
 
-        //exclude google because it doesnt like it for some reason
-        if (/google\.com\/search|webhp/.test(currentUrl)) {
+        if (/google\.com\/search|webhp/.test(currentUrl) || currentUrl.startsWith(serverUrl)) {
             document.documentElement.style.display = '';
             return;
         }
 
-        const queryUrl = `${serverUrl}/${encodeURIComponent(currentUrl)}`;
+        document.documentElement.style.display = 'none';
+
+        const queryUrl = `${serverUrl}/${currentUrl}`;
 
         GM_xmlhttpRequest({
             method: 'GET',
             url: queryUrl,
             onload: function(response) {
                 if (response.status === 200 && response.finalUrl && response.finalUrl !== currentUrl) {
-                    //redirect if link new
                     window.location.href = response.finalUrl;
                 } else if (response.status === 200) {
                     try {
@@ -63,3 +59,5 @@
         checkAndRedirect();
     }
 })();
+
+
