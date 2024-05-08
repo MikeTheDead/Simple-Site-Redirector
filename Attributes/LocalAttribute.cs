@@ -8,14 +8,14 @@ public class LocalAttribute : ActionFilterAttribute
 {
     public override void OnActionExecuting(ActionExecutingContext context)
     {
-        var request = context.HttpContext.Request;
-        var remoteIp = request.HttpContext.Connection.RemoteIpAddress;
-        var isLocal = IPAddress.IsLoopback(remoteIp);
+        var remoteIp = context.HttpContext.Connection.RemoteIpAddress;
 
-        if (!isLocal)
+        // Check if the IP is not null and is a loopback address
+        if (remoteIp == null || !IPAddress.IsLoopback(remoteIp))
         {
             context.Result = new StatusCodeResult(403);  // Forbidden
         }
+
         base.OnActionExecuting(context);
     }
 }

@@ -17,8 +17,18 @@ public class SiteMongoController : IMongoController<Site>
     public async Task<Site?> Get(string id)
     {
         var builder = Builders<Site>.Filter;
-        var filter = builder.Eq(site => site.OriginalSiteURL, id);
+        var filter = builder.Eq(site => NormalizeDomain(site.OriginalSiteURL), id);
         return await siteCollection.Find(filter).FirstOrDefaultAsync();
+    }
+    private string NormalizeDomain(string host)
+    {
+        var parts = host.Split('.');
+        if (parts.Length > 2)
+        {
+            //remove the subdomain
+            return string.Join(".", parts.Skip(1));
+        }
+        return host;
     }
 
     public async Task<List<Site>> GetCollection()

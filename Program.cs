@@ -15,6 +15,16 @@ builder.Services.AddSingleton<SiteMongoController>(new SiteMongoController(colle
 
 builder.Services.AddControllersWithViews();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: "AllowAll",
+        builder =>
+        {
+            builder.AllowAnyOrigin() // Warning: only use AllowAnyOrigin in development.
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        });
+});
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -22,7 +32,7 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
-
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 

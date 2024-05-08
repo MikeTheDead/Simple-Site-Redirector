@@ -22,6 +22,7 @@ public class MainController : Controller
     [HttpGet("home")]
     public IActionResult Home()
     {
+        _logger.LogInformation("Redirecting to home.");
         return RedirectToAction("Index", "Home");
     }
     [HttpGet("/admin")]
@@ -104,54 +105,46 @@ public class MainController : Controller
             url = query;
         }
     
-        if (string.IsNullOrWhiteSpace(url) && string.IsNullOrWhiteSpace(query))
+        if (string.IsNullOrWhiteSpace(url))
         {
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Home", "Home");
         }
-    
-        //add http(s):// is not there 
         if (!url.StartsWith("http://") && !url.StartsWith("https://"))
         {
             url = "http://" + url;
         }
     
-        string pathOnly = Regex.Replace(url, @"^https?:\/\/[^\/]+\/", "");
-        Console.WriteLine(pathOnly);
-
-        Uri uri = new Uri(url);
-        string hostname = uri.Host;
-        if (hostname.Split('.').Length >= 3)
+        Uri uri;
+        if (!Uri.TryCreate(url, UriKind.Absolute, out uri))
         {
-            hostname = hostname.TrimStart($".{hostname.Split('.')[0]}".ToCharArray());
+            _logger.LogError("Invalid URL provided.");
+            return RedirectToAction("Home", "Home");
         }
-        
-        Console.WriteLine(hostname);
+
+        string hostname = uri.Host;
         Site? site = await siteController.Get(hostname);
         if (site == null)
         {
-            Console.WriteLine("Site fail");
-            return RedirectToAction("Index", "Home");
+            _logger.LogInformation("No matching site found for redirection.");
+            return Redirect(url); 
         }
 
-        string redir;
-        string? altSite = site.RedirectableSites.Count > 1 ? site.RedirectableSites.FirstOrDefault(s => s != site.LastRedirection) : site.RedirectableSites.FirstOrDefault();
-
+        string pathOnly = Regex.Replace(url, @"^https?:\/\/[^\/]+\/", "");
+        string? altSite = site.RedirectableSites.FirstOrDefault(s => s != site.LastRedirection);
         if (!string.IsNullOrEmpty(altSite))
         {
             site.LastRedirection = altSite;
             await siteController.Update(site);
-            redir = $"https://{altSite}/{pathOnly}";
+            string redir = $"https://{altSite}/{pathOnly}";
+            return Redirect(redir);
         }
         else
         {
-            return RedirectToAction("Index", "Home");
+            return Redirect(url); 
         }
-
-        // Redirect
-        return Redirect(redir);
     }
 
-
+    
     
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
